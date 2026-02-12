@@ -6,7 +6,9 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "secret123"
 
+# ========================
 # إنشاء قاعدة البيانات
+# ========================
 def init_db():
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
@@ -24,7 +26,9 @@ def init_db():
 
 init_db()
 
+# ========================
 # تسجيل الدخول
+# ========================
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -33,9 +37,12 @@ def login():
             return redirect("/dashboard")
     return render_template("login.html")
 
+# ========================
 # لوحة التحكم
+# ========================
 @app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
+
     if "user" not in session:
         return redirect("/")
 
@@ -64,19 +71,26 @@ def dashboard():
 
     return render_template("dashboard.html", data=data)
 
+# ========================
 # حذف سجل
+# ========================
 @app.route("/delete/<int:id>")
 def delete(id):
+
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     c.execute("DELETE FROM records WHERE id=?", (id,))
     conn.commit()
     conn.close()
+
     return redirect("/dashboard")
 
-# PDF احترافي
+# ========================
+# تقرير PDF عام
+# ========================
 @app.route("/pdf")
 def pdf():
+
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     c.execute("SELECT name, amount, date, time FROM records")
@@ -109,7 +123,15 @@ def pdf():
         if y < 50:
             pdf.showPage()
             y = 800
-            @app.route("/monthly", methods=["POST"])
+
+    pdf.save()
+
+    return send_file(file, as_attachment=True)
+
+# ========================
+# تقرير شهري
+# ========================
+@app.route("/monthly", methods=["POST"])
 def monthly():
 
     month = request.form["month"]
@@ -149,8 +171,8 @@ def monthly():
 
     return send_file(file, as_attachment=True)
 
-    pdf.save()
-    return send_file(file, as_attachment=True)
-
+# ========================
+# تشغيل البرنامج
+# ========================
 if __name__ == "__main__":
     app.run(debug=True)
