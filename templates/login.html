@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ar">
 <head>
-<title>Login</title>
+<meta charset="UTF-8">
+<title>تسجيل الدخول</title>
 
 <style>
 body {
@@ -21,19 +21,69 @@ body {
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     text-align: center;
+    width: 300px;
+}
+
+h2 {
+    margin-bottom: 15px;
 }
 
 input {
-    width: 220px;
+    width: 100%;
     padding: 10px;
-    margin: 6px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
 
 button {
-    padding: 10px 25px;
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 15px;
+}
+
+button:hover {
+    background: #125ea8;
+}
+
+.error {
+    color: red;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.links a {
+    display: block;
+    margin-top: 8px;
+    color: #1976d2;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+.show-pass {
+    font-size: 13px;
+    cursor: pointer;
+    color: #555;
+    margin-top: 4px;
 }
 </style>
+
+<script>
+function togglePassword() {
+    const passField = document.getElementById("password");
+    passField.type = passField.type === "password" ? "text" : "password";
+}
+</script>
 
 </head>
 
@@ -43,11 +93,25 @@ button {
 
 <h2>تسجيل الدخول</h2>
 
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
 <form method="post">
-<input name="user" placeholder="Username"><br>
-<input type="password" name="pass" placeholder="Password"><br>
-<button>Login</button>
+<input name="username" placeholder="اسم المستخدم" required>
+
+<input id="password" type="password" name="pass" placeholder="كلمة المرور" required>
+
+<div class="show-pass" onclick="togglePassword()">👁 إظهار كلمة المرور</div>
+
+<button>دخول</button>
 </form>
+
+<div class="links">
+<a href="/register">إنشاء حساب جديد</a>
+
+<a href="/policy">القواعد والخصوصية</a>
+</div>
 
 </div>
 
