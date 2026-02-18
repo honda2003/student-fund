@@ -1,133 +1,83 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ar">
 <head>
-<title>Dashboard</title>
-
+<meta charset="UTF-8">
+<title>لوحة التحكم المالية</title>
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: linear-gradient(135deg,#e3f2fd,#ffffff);
-    display: flex;
-    justify-content: center;
-}
-
-.container {
-    width: 75%;
-    background: white;
-    padding: 30px;
-    margin: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-h2, h3 {
-    text-align: center;
-}
-
-form {
-    text-align: center;
-}
-
-input {
-    padding: 10px;
-    margin: 5px;
-    width: 200px;
-}
-
-button {
-    padding: 10px 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-th, td {
-    border: 1px solid #ccc;
-    padding: 12px;
-    text-align: center;
-}
-
-th {
-    background: #f1f1f1;
-}
-
-a {
-    color: red;
-    text-decoration: none;
-}
-
-.pdf-link {
-    display: block;
-    text-align: center;
-    margin-top: 15px;
-    font-weight: bold;
-    color: #007bff;
-}
+body {font-family: Arial; direction: rtl; background:#f2f6fa;}
+.container {width: 80%; margin:auto; background:white; padding:20px; border-radius:10px;}
+input, select {padding:8px; margin:5px;}
+button {padding:8px 15px; background:#007bff; color:white; border:none; border-radius:5px;}
+table {width:100%; border-collapse: collapse; margin-top:15px;}
+th, td {padding:10px; border-bottom:1px solid #ddd; text-align:center;}
+.summary {margin-top:20px; font-size:18px;}
+a {text-decoration:none;}
 </style>
-
 </head>
-
 <body>
 
 <div class="container">
 
-<h2>إضافة عملية</h2>
+<h2>إضافة عملية مالية</h2>
 
-<form method="post">
-<input name="name" placeholder="اسم الطالب" required>
-<input name="amount" placeholder="المبلغ" required>
-<button>إضافة</button>
+<form method="POST">
+    <input name="name" placeholder="اسم العملية" required>
+    <input name="amount" type="number" step="0.01" placeholder="المبلغ" required>
+
+    <select name="type">
+        <option value="income">دخل</option>
+        <option value="expense">مصروف</option>
+    </select>
+
+    <button type="submit">إضافة</button>
 </form>
 
-<hr>
+<div class="summary">
+💰 إجمالي الدخل: {{total_income}} <br>
+💸 إجمالي الديون: {{total_expense}} <br>
+📊 الرصيد المتبقي: <b>{{balance}}</b>
+</div>
 
-<h3>السجل</h3>
+<a href="/pdf"><button>تحميل تقرير الشهر PDF</button></a>
 
+<h3>الدخل</h3>
 <table>
-
 <tr>
 <th>الاسم</th>
 <th>المبلغ</th>
 <th>التاريخ</th>
-<th>الوقت</th>
 <th>حذف</th>
 </tr>
 
-{% for row in data %}
+{% for row in incomes %}
 <tr>
 <td>{{row[1]}}</td>
 <td>{{row[2]}}</td>
 <td>{{row[3]}}</td>
-<td>{{row[4]}}</td>
-
-<td>
-<a href="/delete/{{row[0]}}"
-onclick="return confirm('هل تريد حذف العملية؟')">
-🗑 حذف
-</a>
-</td>
-
+<td><a href="/delete/{{row[0]}}" onclick="return confirm('حذف العملية؟')">🗑</a></td>
 </tr>
 {% endfor %}
-
 </table>
 
-<a class="pdf-link" href="/pdf">📄 تحميل التقرير PDF</a>
-<hr>
+<h3>الديون</h3>
+<table>
+<tr>
+<th>الوصف</th>
+<th>المبلغ</th>
+<th>التاريخ</th>
+<th>حذف</th>
+</tr>
 
-<h3>تقرير شهري</h3>
-
-<form action="/monthly" method="post" style="text-align:center;">
-<input type="month" name="month" required>
-<button>تحميل التقرير الشهري</button>
-</form>
+{% for row in expenses %}
+<tr>
+<td>{{row[1]}}</td>
+<td>{{row[2]}}</td>
+<td>{{row[3]}}</td>
+<td><a href="/delete_expense/{{row[0]}}" onclick="return confirm('حذف المصروف؟')">🗑</a></td>
+</tr>
+{% endfor %}
+</table>
 
 </div>
-
 </body>
 </html>
