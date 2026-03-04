@@ -14,11 +14,34 @@ body{
     margin:0;
 }
 
+/* الهيدر */
+.header{
+    background:#007bff;
+    color:white;
+    padding:15px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.header h1{
+    margin:0;
+    font-size:20px;
+}
+
+.logout{
+    background:white;
+    color:#007bff;
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:14px;
+}
+
 /* الحاوية */
 .container{
     max-width: 900px;
     width: 92%;
-    margin: 40px auto;
+    margin: 30px auto;
     background: #ffffff;
     padding: 30px;
     border-radius: 14px;
@@ -49,7 +72,6 @@ button{
     border-radius:6px;
     cursor:pointer;
     font-size:14px;
-    transition:0.2s;
 }
 
 button:hover{
@@ -61,6 +83,9 @@ button:hover{
     margin-top:20px;
     font-size:18px;
     line-height:1.8;
+    background:#f8fbff;
+    padding:15px;
+    border-radius:10px;
 }
 
 /* الجداول */
@@ -98,43 +123,63 @@ a{
 
 /* دعم الجوال */
 @media(max-width:600px){
+
     input, select, button{
         width:100%;
         margin-top:8px;
     }
+
 }
 
 </style>
 </head>
+
 <body>
+
+<div class="header">
+<h1>لوحة التحكم المالية</h1>
+<a class="logout" href="/logout">تسجيل خروج</a>
+</div>
 
 <div class="container">
 
 <h2>إضافة عملية مالية</h2>
 
 <form method="POST">
-    <input name="name" placeholder="اسم العملية" required>
-    <input name="amount" type="number" step="0.01" placeholder="المبلغ" required>
 
-    <select name="type">
-        <option value="income">دخل</option>
-        <option value="expense">مصروف</option>
-    </select>
+<input name="name" placeholder="اسم العملية" required>
 
-    <button type="submit">إضافة</button>
+<input name="amount" type="number" step="0.01" placeholder="المبلغ" required>
+
+<select name="type">
+<option value="income">دخل</option>
+<option value="expense">مصروف</option>
+</select>
+
+<button type="submit">إضافة</button>
+
 </form>
 
 <div class="summary">
+
 💰 إجمالي الدخل: {{total_income}} <br>
-💸 إجمالي الديون: {{total_expense}} <br>
+
+💸 إجمالي المصروفات: {{total_expense}} <br>
+
 📊 الرصيد المتبقي: <b>{{balance}}</b>
+
 </div>
 
 <br>
-<a href="/pdf"><button>تحميل التقرير PDF</button></a>
+
+<a href="/pdf">
+<button>تحميل التقرير PDF</button>
+</a>
 
 <h3>الدخل</h3>
+
 <table>
+
 <tr>
 <th>الاسم</th>
 <th>المبلغ</th>
@@ -143,19 +188,31 @@ a{
 </tr>
 
 {% for row in incomes %}
+
 <tr>
+
 <td>{{row[1]}}</td>
+
 <td>{{row[2]}}</td>
+
 <td>{{row[3]}}</td>
+
 <td>
+
 <a class="delete" href="/delete/{{row[0]}}" onclick="return confirm('حذف العملية؟')">🗑</a>
+
 </td>
+
 </tr>
+
 {% endfor %}
+
 </table>
 
-<h3>الديون</h3>
+<h3>المصروفات</h3>
+
 <table>
+
 <tr>
 <th>الوصف</th>
 <th>المبلغ</th>
@@ -164,17 +221,28 @@ a{
 </tr>
 
 {% for row in expenses %}
+
 <tr>
+
 <td>{{row[1]}}</td>
+
 <td>{{row[2]}}</td>
+
 <td>{{row[3]}}</td>
+
 <td>
+
 <a class="delete" href="/delete_expense/{{row[0]}}" onclick="return confirm('حذف المصروف؟')">🗑</a>
+
 </td>
+
 </tr>
+
 {% endfor %}
+
 </table>
 
 </div>
+
 </body>
 </html>
