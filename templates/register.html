@@ -5,94 +5,43 @@
 <title>إنشاء حساب</title>
 
 <style>
-body {
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(135deg,#dfe9f3,#ffffff);
-    font-family: Arial;
+
+body{
+font-family:Arial;
+background:#f2f6fa;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
-.box {
-    background: white;
-    padding: 35px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 300px;
+.box{
+background:white;
+padding:40px;
+border-radius:12px;
+width:300px;
+text-align:center;
+box-shadow:0 6px 20px rgba(0,0,0,0.08);
 }
 
-h2 {
-    margin-bottom: 15px;
+input{
+width:100%;
+padding:10px;
+margin:8px 0;
+border:1px solid #ccc;
+border-radius:6px;
 }
 
-input {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+button{
+width:100%;
+padding:10px;
+background:#007bff;
+color:white;
+border:none;
+border-radius:6px;
 }
 
-button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    background: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 15px;
-}
-
-button:hover {
-    background: #125ea8;
-}
-
-.link {
-    display: block;
-    margin-top: 12px;
-    color: #1976d2;
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.link:hover {
-    text-decoration: underline;
-}
-
-.error {
-    color: red;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-
-.success {
-    color: green;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-
-.show-pass {
-    font-size: 13px;
-    cursor: pointer;
-    color: #555;
-    margin-top: 4px;
-}
 </style>
-
-<script>
-function togglePassword() {
-    const pass = document.getElementById("pass");
-    const confirm = document.getElementById("confirm");
-
-    pass.type = pass.type === "password" ? "text" : "password";
-    confirm.type = confirm.type === "password" ? "text" : "password";
-}
-</script>
 
 </head>
 
@@ -100,34 +49,25 @@ function togglePassword() {
 
 <div class="box">
 
-<h2>إنشاء حساب جديد</h2>
+<h2>إنشاء حساب</h2>
 
-{% if error %}
-<div class="error">{{ error }}</div>
-{% endif %}
+<form method="POST">
 
-{% if success %}
-<div class="success">{{ success }}</div>
-{% endif %}
+<input name="username" placeholder="اسم المستخدم" required>
 
-<form method="post">
+<input name="password" type="password" placeholder="كلمة المرور" required>
 
-<input name="user" placeholder="اسم المستخدم" required>
-
-<input name="email" type="email" placeholder="البريد الإلكتروني" required>
-
-<input id="pass" type="password" name="pass" placeholder="كلمة المرور" required>
-
-<input id="confirm" type="password" name="confirm" placeholder="تأكيد كلمة المرور" required>
-
-<div class="show-pass" onclick="togglePassword()">👁 إظهار كلمة المرور</div>
-
-<button>إنشاء الحساب</button>
+<button type="submit">إنشاء</button>
 
 </form>
 
-<a class="link" href="/">العودة لتسجيل الدخول</a>
-<a class="link" href="/policy">القواعد والخصوصية</a>
+<br>
+
+<a href="/">العودة لتسجيل الدخول</a>
+
+{% if error %}
+<p style="color:red">{{error}}</p>
+{% endif %}
 
 </div>
 
