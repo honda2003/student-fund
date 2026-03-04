@@ -5,20 +5,24 @@ from datetime import datetime
 from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY","secret123")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+
+# الاتصال بقاعدة البيانات
 def get_db():
-    return psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL)
+    return conn
+
 
 # إنشاء الجداول
 def init_db():
 
     conn = get_db()
-    c = conn.cursor()
+    cur = conn.cursor()
 
-    c.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
@@ -26,7 +30,7 @@ def init_db():
     )
     """)
 
-    c.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS records(
         id SERIAL PRIMARY KEY,
         name TEXT,
@@ -37,7 +41,7 @@ def init_db():
     )
     """)
 
-    c.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS debts(
         id SERIAL PRIMARY KEY,
         title TEXT,
@@ -48,7 +52,9 @@ def init_db():
     """)
 
     conn.commit()
+    cur.close()
     conn.close()
+
 
 init_db()
 
@@ -63,14 +69,16 @@ def login():
         password = request.form["password"]
 
         conn = get_db()
-        c = conn.cursor()
+        cur = conn.cursor()
 
-        c.execute(
+        cur.execute(
         "SELECT * FROM users WHERE username=%s AND password=%s",
         (username,password)
         )
 
-        user = c.fetchone()
+        user = cur.fetchone()
+
+        cur.close()
         conn.close()
 
         if user:
@@ -100,14 +108,16 @@ def register():
         try:
 
             conn = get_db()
-            c = conn.cursor()
+            cur = conn.cursor()
 
-            c.execute(
+            cur.execute(
             "INSERT INTO users(username,password) VALUES(%s,%s)",
             (username,password)
             )
 
             conn.commit()
+
+            cur.close()
             conn.close()
 
             return redirect("/")
@@ -148,45 +158,48 @@ def dashboard():
         time = now.strftime("%H:%M")
 
         conn = get_db()
-        c = conn.cursor()
+        cur = conn.cursor()
 
         if ttype == "expense":
 
-            c.execute("""
+            cur.execute("""
             INSERT INTO debts(title,amount,date,added_by)
             VALUES(%s,%s,%s,%s)
             """,(name,amount,date,session["user"]))
 
         else:
 
-            c.execute("""
+            cur.execute("""
             INSERT INTO records(name,amount,date,time,added_by)
             VALUES(%s,%s,%s,%s,%s)
             """,(name,amount,date,time,session["user"]))
 
         conn.commit()
+
+        cur.close()
         conn.close()
 
         return redirect("/dashboard")
 
 
     conn = get_db()
-    c = conn.cursor()
+    cur = conn.cursor()
 
-    c.execute("SELECT id,name,amount,date FROM records ORDER BY id DESC")
-    incomes = c.fetchall()
+    cur.execute("SELECT id,name,amount,date FROM records ORDER BY id DESC")
+    incomes = cur.fetchall()
 
-    c.execute("SELECT id,title,amount,date FROM debts ORDER BY id DESC")
-    expenses = c.fetchall()
+    cur.execute("SELECT id,title,amount,date FROM debts ORDER BY id DESC")
+    expenses = cur.fetchall()
 
-    c.execute("SELECT SUM(amount) FROM records")
-    total_income = c.fetchone()[0] or 0
+    cur.execute("SELECT SUM(amount) FROM records")
+    total_income = cur.fetchone()[0] or 0
 
-    c.execute("SELECT SUM(amount) FROM debts")
-    total_expense = c.fetchone()[0] or 0
+    cur.execute("SELECT SUM(amount) FROM debts")
+    total_expense = cur.fetchone()[0] or 0
 
     balance = total_income - total_expense
 
+    cur.close()
     conn.close()
 
     return render_template(
@@ -204,11 +217,13 @@ def dashboard():
 def delete(id):
 
     conn = get_db()
-    c = conn.cursor()
+    cur = conn.cursor()
 
-    c.execute("DELETE FROM records WHERE id=%s",(id,))
+    cur.execute("DELETE FROM records WHERE id=%s",(id,))
 
     conn.commit()
+
+    cur.close()
     conn.close()
 
     return redirect("/dashboard")
@@ -219,11 +234,13 @@ def delete(id):
 def delete_expense(id):
 
     conn = get_db()
-    c = conn.cursor()
+    cur = conn.cursor()
 
-    c.execute("DELETE FROM debts WHERE id=%s",(id,))
+    cur.execute("DELETE FROM debts WHERE id=%s",(id,))
 
     conn.commit()
+
+    cur.close()
     conn.close()
 
     return redirect("/dashboard")
@@ -234,14 +251,15 @@ def delete_expense(id):
 def pdf():
 
     conn = get_db()
-    c = conn.cursor()
+    cur = conn.cursor()
 
-    c.execute("SELECT name,amount,date FROM records")
-    incomes = c.fetchall()
+    cur.execute("SELECT name,amount,date FROM records")
+    incomes = cur.fetchall()
 
-    c.execute("SELECT title,amount,date FROM debts")
-    expenses = c.fetchall()
+    cur.execute("SELECT title,amount,date FROM debts")
+    expenses = cur.fetchall()
 
+    cur.close()
     conn.close()
 
     file = "report.pdf"
@@ -258,18 +276,22 @@ def pdf():
     y -= 20
 
     for row in incomes:
+
         pdf.drawString(40,y,f"{row[2]} - {row[0]} : {row[1]}")
         total_income += row[1]
         y -= 20
+
 
     y -= 10
     pdf.drawString(40,y,"Expenses")
     y -= 20
 
     for row in expenses:
+
         pdf.drawString(40,y,f"{row[2]} - {row[0]} : {row[1]}")
         total_expense += row[1]
         y -= 20
+
 
     balance = total_income - total_expense
 
@@ -286,4 +308,7 @@ def pdf():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+
+    port = int(os.environ.get("PORT",10000))
+
+    app.run(host="0.0.0.0",port=port)
