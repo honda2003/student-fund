@@ -2,46 +2,184 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة التحكم المالية</title>
+
 <style>
-body {font-family: Arial; direction: rtl; background:#f2f6fa;}
-.container {width: 80%; margin:auto; background:white; padding:20px; border-radius:10px;}
-input, select {padding:8px; margin:5px;}
-button {padding:8px 15px; background:#007bff; color:white; border:none; border-radius:5px;}
-table {width:100%; border-collapse: collapse; margin-top:15px;}
-th, td {padding:10px; border-bottom:1px solid #ddd; text-align:center;}
-.summary {margin-top:20px; font-size:18px;}
-a {text-decoration:none;}
+
+body{
+    font-family: Arial;
+    direction: rtl;
+    background:#f2f6fa;
+    margin:0;
+}
+
+/* الهيدر */
+.header{
+    background:#007bff;
+    color:white;
+    padding:15px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.header h1{
+    margin:0;
+    font-size:20px;
+}
+
+.logout{
+    background:white;
+    color:#007bff;
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:14px;
+}
+
+/* الحاوية */
+.container{
+    max-width: 900px;
+    width: 92%;
+    margin: 30px auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 14px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.07);
+}
+
+/* العناوين */
+h2, h3{
+    margin-bottom: 10px;
+    color:#333;
+}
+
+/* الحقول */
+input, select{
+    padding:10px;
+    margin:6px 4px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+
+/* الأزرار */
+button{
+    padding:10px 18px;
+    background:#007bff;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+button:hover{
+    background:#0056b3;
+}
+
+/* الملخص */
+.summary{
+    margin-top:20px;
+    font-size:18px;
+    line-height:1.8;
+    background:#f8fbff;
+    padding:15px;
+    border-radius:10px;
+}
+
+/* الجداول */
+table{
+    width:100%;
+    border-collapse: collapse;
+    margin-top:15px;
+    background:white;
+}
+
+th{
+    background:#007bff;
+    color:white;
+}
+
+th, td{
+    padding:10px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
+}
+
+tr:hover{
+    background:#f5f9ff;
+}
+
+a{
+    text-decoration:none;
+}
+
+/* زر الحذف */
+.delete{
+    color:red;
+    font-size:18px;
+}
+
+/* دعم الجوال */
+@media(max-width:600px){
+
+    input, select, button{
+        width:100%;
+        margin-top:8px;
+    }
+
+}
+
 </style>
 </head>
+
 <body>
+
+<div class="header">
+<h1>لوحة التحكم المالية</h1>
+<a class="logout" href="/logout">تسجيل خروج</a>
+</div>
 
 <div class="container">
 
 <h2>إضافة عملية مالية</h2>
 
 <form method="POST">
-    <input name="name" placeholder="اسم العملية" required>
-    <input name="amount" type="number" step="0.01" placeholder="المبلغ" required>
 
-    <select name="type">
-        <option value="income">دخل</option>
-        <option value="expense">مصروف</option>
-    </select>
+<input name="name" placeholder="اسم العملية" required>
 
-    <button type="submit">إضافة</button>
+<input name="amount" type="number" step="0.01" placeholder="المبلغ" required>
+
+<select name="type">
+<option value="income">دخل</option>
+<option value="expense">مصروف</option>
+</select>
+
+<button type="submit">إضافة</button>
+
 </form>
 
 <div class="summary">
+
 💰 إجمالي الدخل: {{total_income}} <br>
-💸 إجمالي الديون: {{total_expense}} <br>
+
+💸 إجمالي المصروفات: {{total_expense}} <br>
+
 📊 الرصيد المتبقي: <b>{{balance}}</b>
+
 </div>
 
-<a href="/pdf"><button>تحميل تقرير الشهر PDF</button></a>
+<br>
+
+<a href="/pdf">
+<button>تحميل التقرير PDF</button>
+</a>
 
 <h3>الدخل</h3>
+
 <table>
+
 <tr>
 <th>الاسم</th>
 <th>المبلغ</th>
@@ -50,17 +188,31 @@ a {text-decoration:none;}
 </tr>
 
 {% for row in incomes %}
+
 <tr>
+
 <td>{{row[1]}}</td>
+
 <td>{{row[2]}}</td>
+
 <td>{{row[3]}}</td>
-<td><a href="/delete/{{row[0]}}" onclick="return confirm('حذف العملية؟')">🗑</a></td>
+
+<td>
+
+<a class="delete" href="/delete/{{row[0]}}" onclick="return confirm('حذف العملية؟')">🗑</a>
+
+</td>
+
 </tr>
+
 {% endfor %}
+
 </table>
 
-<h3>الديون</h3>
+<h3>المصروفات</h3>
+
 <table>
+
 <tr>
 <th>الوصف</th>
 <th>المبلغ</th>
@@ -69,15 +221,28 @@ a {text-decoration:none;}
 </tr>
 
 {% for row in expenses %}
+
 <tr>
+
 <td>{{row[1]}}</td>
+
 <td>{{row[2]}}</td>
+
 <td>{{row[3]}}</td>
-<td><a href="/delete_expense/{{row[0]}}" onclick="return confirm('حذف المصروف؟')">🗑</a></td>
+
+<td>
+
+<a class="delete" href="/delete_expense/{{row[0]}}" onclick="return confirm('حذف المصروف؟')">🗑</a>
+
+</td>
+
 </tr>
+
 {% endfor %}
+
 </table>
 
 </div>
+
 </body>
 </html>
