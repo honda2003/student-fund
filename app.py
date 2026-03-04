@@ -6,16 +6,31 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "secret123"
 
+DB = "data.db"
+
 # ======================
-# إنشاء قاعدة البيانات
+# الاتصال بقاعدة البيانات
+# ======================
+def get_db():
+    return sqlite3.connect(DB)
+
+# ======================
+# إنشاء الجداول
 # ======================
 def init_db():
-    conn = sqlite3.connect("data.db")
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("""
+    CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE
+    )
+    """)
+
+    c.execute("""
     CREATE TABLE IF NOT EXISTS records(
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         amount REAL,
         date TEXT,
@@ -26,7 +41,7 @@ def init_db():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS debts(
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
         amount REAL,
         date TEXT,
@@ -40,27 +55,72 @@ def init_db():
 init_db()
 
 # ======================
-# تسجيل الدخول (آمن بدون أخطاء)
+# تسجيل الدخول
 # ======================
 @app.route("/", methods=["GET","POST"])
 def login():
+
     if request.method == "POST":
 
-        # يدعم username أو user
         username = request.form.get("username") or request.form.get("user")
 
         if not username:
-            return render_template("login.html",
-                                   error="الرجاء إدخال اسم المستخدم")
+            return render_template("login.html", error="ادخل اسم المستخدم")
+
+        conn = get_db()
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM users WHERE username=?", (username,))
+        user = c.fetchone()
+
+        if not user:
+            c.execute("INSERT INTO users(username) VALUES(?)", (username,))
+            conn.commit()
+
+        conn.close()
 
         session["user"] = username
+
         return redirect("/dashboard")
 
     return render_template("login.html")
 
+# ======================
+# إنشاء حساب
+# ======================
+@app.route("/register", methods=["GET","POST"])
+def register():
+
+    if request.method == "POST":
+
+        username = request.form.get("username")
+
+        if not username:
+            return render_template("register.html", error="ادخل اسم المستخدم")
+
+        try:
+
+            conn = get_db()
+            c = conn.cursor()
+
+            c.execute("INSERT INTO users(username) VALUES(?)",(username,))
+            conn.commit()
+            conn.close()
+
+            return redirect("/")
+
+        except:
+
+            return render_template("register.html", error="المستخدم موجود مسبقاً")
+
+    return render_template("register.html")
+
+# ======================
 # تسجيل خروج
+# ======================
 @app.route("/logout")
 def logout():
+
     session.clear()
     return redirect("/")
 
@@ -69,48 +129,53 @@ def logout():
 # ======================
 @app.route("/dashboard", methods=["GET","POST"])
 def dashboard():
+
     if "user" not in session:
         return redirect("/")
 
     if request.method == "POST":
+
         name = request.form.get("name")
         amount = request.form.get("amount")
         ttype = request.form.get("type")
 
-        if not name or not amount:
-            return redirect("/dashboard")
+        if name and amount:
 
-        amount = float(amount)
+            amount = float(amount)
 
-        now = datetime.now()
-        date = now.strftime("%Y-%m-%d")
-        time = now.strftime("%H:%M")
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d")
+            time = now.strftime("%H:%M")
 
-        conn = sqlite3.connect("data.db")
-        c = conn.cursor()
+            conn = get_db()
+            c = conn.cursor()
 
-        if ttype == "expense":
-            c.execute("""
-            INSERT INTO debts(title,amount,date,added_by)
-            VALUES(?,?,?,?)
-            """,(name,amount,date,session["user"]))
-        else:
-            c.execute("""
-            INSERT INTO records(name,amount,date,time,added_by)
-            VALUES(?,?,?,?,?)
-            """,(name,amount,date,time,session["user"]))
+            if ttype == "expense":
 
-        conn.commit()
-        conn.close()
+                c.execute("""
+                INSERT INTO debts(title,amount,date,added_by)
+                VALUES(?,?,?,?)
+                """,(name,amount,date,session["user"]))
+
+            else:
+
+                c.execute("""
+                INSERT INTO records(name,amount,date,time,added_by)
+                VALUES(?,?,?,?,?)
+                """,(name,amount,date,time,session["user"]))
+
+            conn.commit()
+            conn.close()
+
         return redirect("/dashboard")
 
-    conn = sqlite3.connect("data.db")
+    conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT id, name, amount, date FROM records ORDER BY id DESC")
+    c.execute("SELECT id,name,amount,date FROM records ORDER BY id DESC")
     incomes = c.fetchall()
 
-    c.execute("SELECT id, title, amount, date FROM debts ORDER BY id DESC")
+    c.execute("SELECT id,title,amount,date FROM debts ORDER BY id DESC")
     expenses = c.fetchall()
 
     c.execute("SELECT SUM(amount) FROM records")
@@ -123,152 +188,114 @@ def dashboard():
 
     conn.close()
 
-    return render_template("dashboard.html",
-                           incomes=incomes,
-                           expenses=expenses,
-                           total_income=total_income,
-                           total_expense=total_expense,
-                           balance=balance,
-                           user=session["user"])
+    return render_template(
+        "dashboard.html",
+        incomes=incomes,
+        expenses=expenses,
+        total_income=total_income,
+        total_expense=total_expense,
+        balance=balance,
+        user=session["user"]
+    )
 
-# حذف دخل
+# ======================
+# حذف العمليات
+# ======================
 @app.route("/delete/<int:id>")
 def delete(id):
-    if "user" not in session:
-        return redirect("/")
-    conn = sqlite3.connect("data.db")
+
+    conn = get_db()
     c = conn.cursor()
+
     c.execute("DELETE FROM records WHERE id=?", (id,))
+
     conn.commit()
     conn.close()
+
     return redirect("/dashboard")
 
-# حذف مصروف
 @app.route("/delete_expense/<int:id>")
 def delete_expense(id):
-    if "user" not in session:
-        return redirect("/")
-    conn = sqlite3.connect("data.db")
+
+    conn = get_db()
     c = conn.cursor()
+
     c.execute("DELETE FROM debts WHERE id=?", (id,))
+
     conn.commit()
     conn.close()
+
     return redirect("/dashboard")
 
 # ======================
-# تقرير PDF لكل الأموال
+# صفحة الخصوصية
 # ======================
-@app.route("/pdf_all")
-def pdf_all():
+@app.route("/policy")
+def policy():
+    return render_template("policy.html")
+
+# ======================
+# إنشاء تقرير PDF
+# ======================
+@app.route("/pdf")
+def pdf():
+
     if "user" not in session:
         return redirect("/")
 
-    conn = sqlite3.connect("data.db")
+    conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT name, amount, date FROM records")
+    c.execute("SELECT name,amount,date FROM records")
     incomes = c.fetchall()
 
-    c.execute("SELECT title, amount, date FROM debts")
+    c.execute("SELECT title,amount,date FROM debts")
     expenses = c.fetchall()
 
     conn.close()
 
-    file = "all_report.pdf"
+    file = "report.pdf"
     pdf = canvas.Canvas(file)
 
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(180, 800, "Full Financial Report")
+    pdf.setFont("Helvetica-Bold",16)
+    pdf.drawString(180,800,"Financial Report")
 
     y = 760
     total_income = 0
     total_expense = 0
 
-    pdf.drawString(40, y, "Incomes:")
+    pdf.drawString(40,y,"Incomes")
     y -= 20
 
     for row in incomes:
-        pdf.drawString(40, y, f"{row[2]} - {row[0]} : {row[1]}")
+        pdf.drawString(40,y,f"{row[2]} - {row[0]} : {row[1]}")
         total_income += row[1]
         y -= 20
 
     y -= 10
-    pdf.drawString(40, y, "Expenses:")
+    pdf.drawString(40,y,"Expenses")
     y -= 20
 
     for row in expenses:
-        pdf.drawString(40, y, f"{row[2]} - {row[0]} : {row[1]}")
+        pdf.drawString(40,y,f"{row[2]} - {row[0]} : {row[1]}")
         total_expense += row[1]
         y -= 20
 
     balance = total_income - total_expense
 
     y -= 20
-    pdf.drawString(40, y, f"Total Income: {total_income}")
+    pdf.drawString(40,y,f"Total Income: {total_income}")
     y -= 20
-    pdf.drawString(40, y, f"Total Expenses: {total_expense}")
+    pdf.drawString(40,y,f"Total Expense: {total_expense}")
     y -= 20
-    pdf.drawString(40, y, f"Balance: {balance}")
+    pdf.drawString(40,y,f"Balance: {balance}")
 
     pdf.save()
+
     return send_file(file, as_attachment=True)
 
 # ======================
-# تقرير حسب شهر يحدده المستخدم
+# تشغيل التطبيق
 # ======================
-@app.route("/pdf_month")
-def pdf_month():
-    if "user" not in session:
-        return redirect("/")
-
-    month = request.args.get("month")
-
-    if not month:
-        return "يرجى تحديد الشهر مثل: ?month=2026-02"
-
-    conn = sqlite3.connect("data.db")
-    c = conn.cursor()
-
-    c.execute("SELECT name, amount, date FROM records WHERE date LIKE ?", (f"{month}%",))
-    incomes = c.fetchall()
-
-    c.execute("SELECT title, amount, date FROM debts WHERE date LIKE ?", (f"{month}%",))
-    expenses = c.fetchall()
-
-    conn.close()
-
-    file = "monthly_report.pdf"
-    pdf = canvas.Canvas(file)
-
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(170, 800, f"Report for {month}")
-
-    y = 760
-    total_income = 0
-    total_expense = 0
-
-    for row in incomes:
-        pdf.drawString(40, y, f"{row[2]} - {row[0]} : {row[1]}")
-        total_income += row[1]
-        y -= 20
-
-    for row in expenses:
-        pdf.drawString(40, y, f"{row[2]} - {row[0]} : {row[1]}")
-        total_expense += row[1]
-        y -= 20
-
-    balance = total_income - total_expense
-
-    y -= 20
-    pdf.drawString(40, y, f"Income: {total_income}")
-    y -= 20
-    pdf.drawString(40, y, f"Expenses: {total_expense}")
-    y -= 20
-    pdf.drawString(40, y, f"Balance: {balance}")
-
-    pdf.save()
-    return send_file(file, as_attachment=True)
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
-
+    app.run(debug=True)
